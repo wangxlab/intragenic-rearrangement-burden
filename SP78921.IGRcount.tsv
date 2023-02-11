@@ -1,0 +1,2 @@
+SampleID	Intergenic.AGR(n)	Intergenic.Inter-chr(n)	Intergenic.Intro-chr(n)	Intragenic.DEL(n)	Intragenic.DUP(n)	IGR.count(DUP+DEL)	IGR.burden(sqrt)
+SP78921	2	89	9	25	283	308	17.5499287747842
