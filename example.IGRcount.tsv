@@ -1,0 +1,2 @@
+SampleID	Intergenic.AGR(n)	Intergenic.Inter-chr(n)	Intergenic.Intro-chr(n)	Intragenic.DEL(n)	Intragenic.DUP(n)	IGR.count(DUP+DEL)	IGR.burden(sqrt)
+example	1	74	6	8	113	121	11
