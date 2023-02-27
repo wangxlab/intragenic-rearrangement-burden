@@ -20,12 +20,13 @@ Users need to type in four arguments for the CountIGRBurden.exe to run the calcu
 
 ## Example
 ```
-./CountIGRBurden.exe SP78921.e9d607e8-41c3-4210-870b-a9ab9b1d1c8c.broad-dRanger_snowman.svfix.20151023.somatic.sv.vcf SP78921 SP78921.IGRcount.tsv UCSCAndGencodeCompV27lift37.annotation.gtf.exon_intron.merge.an
+./CountIGRBurden.exe example.sv.vcf example example.IGRcount.tsv UCSCAndGencodeCompV27lift37.annotation.gtf.exon_intron.merge.an
 ```
+
 ## Example Output
 SampleID | Intergenic.AGR(n) | Intergenic.Inter-chr(n) | Intergenic.Intro-chr(n) | Intragenic.DEL(n) | Intragenic.DUP(n) | IGR.count(DUP+DEL) | IGR.burden(sqrt)
 --- | --- | --- | --- | --- | --- | --- | --- 
-SP78921 | 2 | 89 | 9 | 25 | 283 | 308 | 17.54992877
+example | 1 | 74 | 6 | 8 | 113 | 121 | 11
 
 Notes to headers:  
 Intergenic.AGR(n): adjacent intergenic rearrangements.  
