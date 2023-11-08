@@ -156,24 +156,24 @@ hallmark <- fgsea(pathways = msigdbr_list_hallmark, geneRanks, minSize = 15,
 
 h <- hallmark[hallmark$padj < 0.05, ]
 
-# ----- Figure S4 -----
+# ----- Figure 2a -----
 # mean barplots with 95% CI shows why choose TNBC over non-TNBC
 # see PRISM result ["~/Projects/IGR/data_for_manuscript/IGR.pzfx"]
 
-# ----- Figure 2a -----
+# ----- Figure 2b -----
 # stacked barplots showing IGR is associated with cisplatin and PARP inhibitors?
 # see PRISM result ["~/Projects/IGR/data_for_manuscript/IGR.pzfx"]
 tnbc$Lymphocyte_infiltration2 <- ifelse(tnbc$Lymphocyte_infiltration == "nil" | tnbc$Lymphocyte_infiltration == "mild", 
                                         "nil+mild", tnbc$Lymphocyte_infiltration)
-fig2a <- table(tnbc$igr_level, tnbc$Lymphocyte_infiltration)
-apply(fig2a, 1, function(x) x/sum(x))
+fig2b <- table(tnbc$igr_level, tnbc$Lymphocyte_infiltration)
+apply(fig2b, 1, function(x) x/sum(x))
 
 tnbc$mitotic_score2 <- ifelse(tnbc$mitotic_score == "1" | tnbc$mitotic_score == "2", 
                                         "<3", tnbc$mitotic_score)
-fig2a <- table(tnbc$igr_level, tnbc$mitotic_score2)
-apply(fig2a, 1, function(x) x/sum(x))
+fig2b <- table(tnbc$igr_level, tnbc$mitotic_score2)
+apply(fig2b, 1, function(x) x/sum(x))
 
-# ----- Figure 2b & c -----
+# ----- Figure 2c -----
 # boxplots
 for (i in c("HRD", "T_cell_CD8.", "inflame", "Macrophage_M1", "total_mitoses", "T_cell_CD4._memory_activated", "Macrophage_M2")) {
     for (j in unique(tnbc$levels)) {
@@ -185,7 +185,7 @@ for (i in c("HRD", "T_cell_CD8.", "inflame", "Macrophage_M1", "total_mitoses", "
 idx2 <- which(tnbc$total_mitoses != "no_data_supplied")
 wilcox.test(as.numeric(tnbc$total_mitoses[idx2]) ~ tnbc$igr_level[idx2])
 
-# ----- Figure 2d -----
+# ----- Figure S5c -----
 # igr vs HRD + inflame vs HRD
 # see PRISM result ["~/Projects/IGR/data_for_manuscript/IGR.pzfx"]
 write.table(tnbc$HRD, "~/Documents/HRD.txt", quote = FALSE, 
@@ -196,10 +196,10 @@ write.table(tnbc$sqrt_igr, "~/Documents/sqrt_igr.txt", quote = FALSE,
             row.names = FALSE, col.names = FALSE)
 cor(tnbc$HRD, tnbc$inflame)
 cor(tnbc$HRD, tnbc$sqrt_igr)
-fig2D <- data.frame(hrd = tnbc$HRD,
+figS5C <- data.frame(hrd = tnbc$HRD,
                     inflame = tnbc$inflame,
                     igr = tnbc$sqrt_igr)
-fig2d1 <- ggplot(fig2D, aes(x = hrd, y = inflame)) + 
+figS5C <- ggplot(figS5C, aes(x = hrd, y = inflame)) + 
     geom_point(size = 3, col = "lightgrey") + 
     geom_smooth(method = "lm", se = FALSE, lty = 2, col = "black") + 
     labs(x = "HRD Score", y = "Inflame Signature") + 
@@ -210,22 +210,9 @@ fig2d1 <- ggplot(fig2D, aes(x = hrd, y = inflame)) +
           axis.text = element_text(size = 15), 
           axis.title = element_text(size = 18)) + 
     annotate("text", 0, 0, label = "cor=0.108\np=0.361", size = 7, hjust = 0)
-ggsave("figures/fig2d1.pdf", fig2d1, units = "in", width = 7, height = 7)
+ggsave("figures/figS5C.pdf", fig2d1, units = "in", width = 7, height = 7)
 
-fig2d2 <- ggplot(fig2D, aes(x = hrd, y = igr)) + 
-    geom_point(size = 3, col = "lightgrey") + 
-    geom_smooth(method = "lm", se = FALSE, lty = 2, col = "black") + 
-    labs(x = "HRD Score", y = "IGR Burden") + 
-    theme_classic() + 
-    theme(legend.title = element_text(size = 15, face = "bold"), 
-          legend.text = element_text(size = 15),
-          strip.text.x = element_text(size = 15, face = "bold"),
-          axis.text = element_text(size = 15), 
-          axis.title = element_text(size = 18)) + 
-    annotate("text", 0, 20, label = "cor=0.662\np=1.79e-10***", size = 7, hjust = 0)
-ggsave("figures/fig2d2.pdf", fig2d2, units = "in", width = 7, height = 7)
-
-# ----- Figure 2e -----
+# ----- Figure S5f -----
 # heatmap
 maria = list()
 maria$CD8 = c("CD8A", "GZMA", "GZMB", "PRF1", "CXCL9", "CXCL10", "TBX21")
@@ -304,41 +291,14 @@ plot.matrix2 <- plot.matrix2[rownames(plot.matrix2) %in% interested_genes, ]
 my_rownames <- ifelse(rownames(plot.matrix2) %in% interested_genes, 
                       rownames(plot.matrix2), "")
 
-fig2g <- pheatmap(plot.matrix2, 
-         cluster_rows      = FALSE, 
-         cluster_cols      = FALSE,
-         color             = myColor, 
-         breaks            = myBreaks, 
-         annotation        = annotation,
-         fontsize_col      = 6,
-         fontsize_row      = 8,
-         legend            = TRUE, 
-         show_colnames     = FALSE,
-         annotation_legend = FALSE,
-         annotation_colors = anno_colors,
-         cellwidth         = 5,
-         cellheight        = 7)
-# labels_row        = my_rownames
-# fig2e <- add.flag(fig2e, kept.labels = my_rownames, repel.degree = 0)
-ggsave("figures/fig2g.pdf", fig2g, width = 12, height = 5, units = "in")
-ggsave("~/Documents/Research/WangLab/Manuscript/v5/figures_v5/new/fig2e.pdf",
-       fig2g, width = 7, height = 4, units = "in")
-
-# ----- Figure 2f -----
+# ----- Figure 2e -----
 # see PRISM result ["~/Projects/IGR/data_for_manuscript/IGR.pzfx"]
 # pathway barplot
 pathway_p <- -log10(h$padj) * sign(h$NES)
 names(pathway_p) <- h$pathway
 
-# ----- Figure S5 -----
-# volcano plot
 
-# ----- Figure S6 -----
-# boxplot and scatter plot shows HRD is not associated with inflame
-# see PRISM result ["~/Projects/IGR/data_for_manuscript/IGR.pzfx"]
-tnbc$HRD_level <- ifelse(tnbc$HRD_level >= median(tnbc$HRD_level), "High", "Low")
-
-# ----- Figure S7 -----
+# ----- Figure S5g -----
 # gsea results of significant pathways
 for (i in h$pathway) {
     tmp <- paste0("p.adj=", round(h[h$pathway == i, "padj"], digits = 4), 
@@ -370,43 +330,3 @@ fig2e <- ggplot(tnbc, aes(x = HRD, y = inflame, col = sqrt_igr)) +
           axis.text = element_text(size = 18),
           axis.title = element_text(size = 18))
 ggsave("figures/fig2e.pdf", fig2e, units = "in", width = 8, height = 4.5)
-
-# volcano
-atab2 = top_table
-#atab2$logFC = atab2$logFC * (-1)
-atab2$color = array()
-atab2$color[atab2$p.value > 0.05] = "grey"
-atab2$color[atab2$p.value <= 0.05 & sign(atab2$logFC) < 0] = "blue"
-atab2$color[atab2$p.value <= 0.05 & sign(atab2$logFC) > 0] = "red"
-atab2$color = factor(atab2$color)
-p <- ggplot(data = atab2, 
-            aes(x = logFC, 
-                y = -log10(p.value), 
-                colour=color)) +
-    geom_point(alpha=0.2, size=2) +
-    scale_color_manual(values=c("#CC66FE", "grey", "#66FF66"))+
-    xlim(c(-2.5, 2.5)) +
-    labs(x="log(fold change)",
-         y="-log10(p.value)")  +
-    theme_bw() +
-    ylim(0, 6) + 
-    theme(legend.position = "none",
-          axis.text = element_text(size = 12), 
-          axis.title = element_text(size = 12)) + 
-    annotate("text", label = "LAG3",  
-             x = top_table[rownames(top_table) == "LAG3", "logFC"],
-             y = -log10(top_table[rownames(top_table) == "LAG3", "p.value"]) - 0.2) + 
-    annotate("text", label = "TAP2",  
-             x = top_table[rownames(top_table) == "TAP2", "logFC"],
-             y = -log10(top_table[rownames(top_table) == "TAP2", "p.value"])) + 
-    annotate("text", label = "CXCL9",  
-             x = top_table[rownames(top_table) == "CXCL9", "logFC"],
-             y = -log10(top_table[rownames(top_table) == "CXCL9", "p.value"]) - 0.2) + 
-    annotate("text", label = "PRF1",  
-             x = top_table[rownames(top_table) == "PRF1", "logFC"],
-             y = -log10(top_table[rownames(top_table) == "PRF1", "p.value"])) + 
-    annotate("text", label = "GZMB",  
-             x = top_table[rownames(top_table) == "GZMB", "logFC"],
-             y = -log10(top_table[rownames(top_table) == "GZMB", "p.value"]))
-ggsave("figures//fig2-volcano.pdf", p, 
-       units = "in", height = 3, width = 4)
