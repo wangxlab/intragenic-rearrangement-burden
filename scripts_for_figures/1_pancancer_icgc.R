@@ -9,7 +9,61 @@ icgc_igr_mut <- inner_join(icgc_igr, icgc_mut, by = c("SampleID" = "icgc_specime
 icgc_igr_mut$sqrt_igr <- sqrt(icgc_igr_mut$Intragenic.DEL.n. + icgc_igr_mut$Intragenic.DUP.n.)
 icgc_igr_mut$sqrt_tmb <- sqrt(icgc_igr_mut$missense_variant)
 icgc_igr_mut$sqrt_indel <- sqrt(icgc_igr_mut$frameshift_variant)
-icgc_igr_mut$sqrt_cnv <- sqrt(icgc_igr_mut$gain + icgc_igr_mut$loss)
+# ----- Somatic CNV -----
+setwd("~/Documents/Research/WangLab/Manuscript/rebuttal_files/")
+a = list.files("consensus.20170119.somatic.cna.icgc.public/")
+a2 = list.files("consensus.20170119.somatic.cna.tcga.public/")
+purity = read.table("consensus.20170217.purity.ploidy.txt", sep = "\t", head = T)
+aa = c(a, a2)
+b = unlist(sapply(aa, function(x) unlist(strsplit(x, "\\."))[1]))
+
+purity = purity[match(as.character(b), purity$samplename), ]
+
+project = read.table("~/Documents/Research/WangLab/Projects/IGR/data_for_manuscript/pcawg_sample_sheet.v1.4.2016-09-14.tsv", 
+                     head = T, sep = "\t")
+a = paste0("consensus.20170119.somatic.cna.icgc.public/", a)
+a2 = paste0("consensus.20170119.somatic.cna.tcga.public/", a2)
+a = c(a, a2)
+a = lapply(a, read.table, head = T)
+cnv = sapply(a, function(x) {
+    nrow(x[x$total_cn != 2 | x$major_cn != 1 | x$minor_cn != 1, ])
+})
+
+adj_cnv = c()
+for (i in 1:2778) {
+    tmp = a[[i]]
+    pp = purity$purity[i]
+    nominator = tmp$total_cn*pp + 2*(1-pp)
+    #demoninator = pp*3 + 2*(1-pp)
+    demoninator = pp*purity$ploidy[i] + 2*(1-pp)
+    tmp = nominator/demoninator
+    tmp = log2(abs(na.omit(tmp)))
+    tmp = tmp[tmp >= 0.35]
+    tmp = ifelse(tmp > 1, 2, 1)
+    adj_cnv[i] = sum(tmp)
+}
+adj_cnv2 = adj_cnv
+
+adj_cnv = c()
+for (i in 1:2778) {
+    tmp = a[[i]]
+    pp = purity$purity[i]
+    nominator = tmp$total_cn*pp + 2*(1-pp)
+    demoninator = pp*3 + 2*(1-pp)
+    # demoninator = pp*purity$ploidy[i] + 2*(1-pp)
+    tmp = nominator/demoninator
+    tmp = abs(na.omit(tmp))
+    tmp = tmp[tmp >= 0.35]
+    tmp = ifelse(tmp > 1, 2, 1)
+    adj_cnv[i] = sum(tmp)
+}
+
+cnv = data.frame(id = b, cnv = cnv, scna = adj_cnv, scna2 = adj_cnv2)
+cnv_db= inner_join(cnv, project, by = c("id" = "aliquot_id"))
+cnv_db= inner_join(cnv_db, purity, by = c("id" = "samplename"))
+
+icgc = left_join(icgc, cnv_db, by = c("SampleID" = "icgc_specimen_id"))
+icgc$sqrt_scna = sqrt(icgc$scna)
 icgc_igr_mut$catype <- icgc_igr_mut$project_code.x
 write.table(icgc_igr_mut, "data_for_manuscript/icgc_igr_mut.tsv", 
             sep = "\t", quote = FALSE, row.names = FALSE)
@@ -143,9 +197,9 @@ fig1b <- ggplot(icgc, aes(x = sqrt_igr, y = sqrt_tmb, col = inflame)) +
 #    annotate("text", x = 200, y = 30, label = "IGR-driven", size = 8)
 #ggsave("figures/fig1b.pdf", fig1b, units = "in", width = 8, height = 6)
 ggsave("~/Documents/fig1b.pdf", fig1b, units = "in", width = 7, height = 5)
-# ----- Figure S1a -----
+# ----- Figure S2a -----
 # Scatter plot showing frameshift and mutation burden are positively associated
-figS1a <- ggplot(icgc, aes(x = sqrt_indel, y = sqrt_tmb, col = inflame)) + 
+figS2a <- ggplot(icgc, aes(x = sqrt_indel, y = sqrt_tmb, col = inflame)) + 
     geom_point(size = 4.5, alpha = 0.4) + 
     labs(x = "Frameshift Burden", y = "Tumor Mutation Burden", col = "Inflame Sig.") + 
     scale_color_gradient2(low = "#3300FF", high = "#FF0000", mid = "white", 
@@ -161,11 +215,11 @@ figS1a <- ggplot(icgc, aes(x = sqrt_indel, y = sqrt_tmb, col = inflame)) +
           legend.justification = c(1, 0), 
           axis.text = element_text(size = 18), 
           axis.title = element_text(size = 18))
-ggsave("figures/figS1a.pdf", figS1a, units = "in", width = 8, height = 6)
+ggsave("figures/figS2a.pdf", figS2a, units = "in", width = 8, height = 6)
 
-# ----- Figure S1b -----
+# ----- Figure S2b -----
 # Scatter plot showing IGR burden and frameshift are not associated
-figS1b <- ggplot(icgc, aes(x = sqrt_indel, y = sqrt_igr, col = inflame)) + 
+figS2b <- ggplot(icgc, aes(x = sqrt_indel, y = sqrt_igr, col = inflame)) + 
     geom_point(size = 4.5, alpha = 0.4) + 
     labs(x = "Frameshift Burden", y = "IGR Burden", col = "Inflame Sig.") + 
     scale_color_gradient2(low = "#3300FF", high = "#FF0000", mid = "white", 
@@ -181,11 +235,11 @@ figS1b <- ggplot(icgc, aes(x = sqrt_indel, y = sqrt_igr, col = inflame)) +
           legend.justification = c(1, 0), 
           axis.text = element_text(size = 18), 
           axis.title = element_text(size = 18))
-ggsave("figures/figS1b.pdf", figS1b, units = "in", width = 8, height = 6)
+ggsave("figures/figS2b.pdf", figS2b, units = "in", width = 8, height = 6)
 
-# ----- Figure S2 -----
+# ----- Figure S3 -----
 # Figure 1b by cancer type
-figS2 <- ggplot(icgc, aes(x = sqrt_igr, y = sqrt_tmb, col = inflame)) + 
+figS3 <- ggplot(icgc, aes(x = sqrt_igr, y = sqrt_scna, col = inflame)) + 
     geom_point(size = 2.5, alpha = 0.4) + 
     labs(x = "IGR Burden", y = "Tumor Mutation Burden", col = "Inflame Sig.") + 
     scale_color_gradient2(low = "#3300FF", high = "#FF0000", mid = "white", 
@@ -201,7 +255,7 @@ figS2 <- ggplot(icgc, aes(x = sqrt_igr, y = sqrt_tmb, col = inflame)) +
           axis.text = element_text(size = 12), 
           axis.title = element_text(size = 18)) + 
     facet_wrap(~catype_n, nc = 7)
-ggsave("figures/figS2.pdf", figS2, units = "in", width = 12, height = 5)
+ggsave("figures/figS3.pdf", figS3, units = "in", width = 12, height = 5)
 
 # ----- Figure 1c -----
 # see PRISM result ["~/Projects/IGR/data_for_manuscript/IGR.pzfx"]
@@ -209,16 +263,11 @@ ggsave("figures/figS2.pdf", figS2, units = "in", width = 12, height = 5)
 write.table(cancer_info_norm, "~/Documents/cancer_info_norm.txt", 
             quote = FALSE, row.names = FALSE, sep = "\t")
 
-# ----- Fig S3 -----
-# see PRISM result ["~/Projects/IGR/data_for_manuscript/IGR.pzfx"]
-# Fig S3. Cancer Types (Frameshift Burden vs Mutation Burden)
-
 # ----- Figure 1d -----
 igr_catype <- cancer_info_norm[cancer_info_norm$sqrt_igr >= 1 & 
                                    cancer_info_norm$sqrt_tmb < 1, "catype"]
 tmb_catype <- cancer_info_norm[cancer_info_norm$sqrt_igr < 1 & 
                                    cancer_info_norm$sqrt_tmb >= 1, "catype"]
-catype3 = c("KIRC", "KIRP", "KICH")
 interested <- list()
 for (i in igr_catype) {
     tmp <- icgc[icgc$catype == i, ]
@@ -231,26 +280,6 @@ for (i in igr_catype) {
 interested <- bind_rows(interested)
 interested$total_level_same_cancer <- 
     paste0(interested$igr_level_in_cancer, "/", interested$tmb_level_in_cancer)
-
-# measure R^2 (variance explained in predicting inflame sig)
-# igr significant, p = 0.024
-m1 <- lm(inflame ~ sqrt_tmb*catype, data = interested)
-m2 <- lm(inflame ~ sqrt_igr*catype, data = interested)
-m3 <- lm(inflame ~ sqrt_igr*catype + sqrt_tmb*catype, data = interested)
-rs <- c(summary(m1)$r.squared, summary(m2)$r.squared, summary(m3)$r.squared)
-anova(m1, m3)
-
-m1 <- lm(mutation_rate ~ sqrt_tmb*catype, data = interested)
-m2 <- lm(mutation_rate ~ sqrt_igr*catype, data = interested)
-m3 <- lm(mutation_rate ~ sqrt_igr*catype + sqrt_tmb*catype, data = interested)
-rs <- c(summary(m1)$r.squared, summary(m2)$r.squared, summary(m3)$r.squared)
-anova(m1, m3)
-#anova(m2, m3)
-#rs
-
-#write.table(interested$cell_cycle_sig[interested$tmb_level_in_cancer == "TMB_Low"],
-#            "~/Documents/cc_tmb.txt", 
-#            quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
 ggplot(interested, aes(x    = total_level_same_cancer, 
                        y    = inflame, 
@@ -270,55 +299,3 @@ ggplot(interested, aes(x    = total_level_same_cancer,
           axis.title.y = element_text(size = 18),
           axis.ticks.x = element_blank()) + 
     guides(fill = guide_legend(nrow = 2, byrow = TRUE))
-for (i in c("IGR_High/TMB_High", "IGR_High/TMB_Low",
-            "IGR_Low/TMB_High", "IGR_Low/TMB_Low")) {
-    write.table(interested[interested$total_level_same_cancer == i, "inflame"],
-                paste0("~/Documents/", gsub("/", "_", i), ".txt"),
-                quote = FALSE, row.names = FALSE, col.names = FALSE)
-}
-
-# IGR vs TMB vs Indel vs CNV
-na <- which(! is.na(icgc$sqrt_cnv))
-icgc_na <- droplevels(icgc[na, ])
-figS1_igr <- ggplot(icgc_na, aes(x = sqrt_igr, y = sqrt_cnv)) + 
-    geom_point(size = 4.5, alpha = 0.4) + 
-    labs(x = "IGR Burden", y = "CNV Burden", 
-         title = paste0("Pearson=", 
-                        round(cor(icgc_na$sqrt_igr, icgc_na$sqrt_cnv), digit = 3), 
-                        ", pvalue=", 
-                        round(cor.test(icgc_na$sqrt_igr, icgc_na$sqrt_cnv)$p.value, digit = 3))) + 
-    theme_classic() +
-    geom_smooth(method = "lm", se = FALSE) + 
-    theme(axis.text = element_text(size = 18), 
-          axis.title = element_text(size = 18), 
-          title = element_text(size = 12))
-# ggsave("figures/figS1_igr.pdf", figS1_igr)
-figS1_tmb <- ggplot(icgc_na, aes(x = sqrt_tmb, y = sqrt_cnv)) + 
-    geom_point(size = 4.5, alpha = 0.4) + 
-    labs(x = "Mutation Burden", y = "CNV Burden", 
-         title = paste0("Pearson=", 
-                        round(cor(icgc_na$sqrt_tmb, icgc_na$sqrt_cnv), digit = 3), 
-                        ", pvalue=", 
-                        round(cor.test(icgc_na$sqrt_tmb, icgc_na$sqrt_cnv)$p.value, digit = 3))) + 
-    theme_classic() +
-    geom_smooth(method = "lm", se = FALSE) + 
-    theme(axis.text = element_text(size = 18), 
-          axis.title = element_text(size = 18), 
-          title = element_text(size = 12))
-figS1_indel <- ggplot(icgc_na, aes(x = sqrt_indel, y = sqrt_cnv)) + 
-    geom_point(size = 4.5, alpha = 0.4) + 
-    labs(x = "Indel Burden", y = "CNV Burden", 
-         title = paste0("Pearson=", 
-                        round(cor(icgc_na$sqrt_indel, icgc_na$sqrt_cnv), digit = 3), 
-                        ", pvalue=", 
-                        round(cor.test(icgc_na$sqrt_indel, icgc_na$sqrt_cnv)$p.value, digit = 3))) + 
-    theme_classic() +
-    geom_smooth(method = "lm", se = FALSE) + 
-    theme(axis.text = element_text(size = 18), 
-          axis.title = element_text(size = 18), 
-          title = element_text(size = 12))
-figS1_f = ggarrange(figS1_igr, figS1_tmb, figS1_indel, ncol = 3)
-ggsave("figures/figS1_f.pdf", figS1_f, units = "in", width = 12, height = 4)
-
-# lung squamous
-lusc = icgc[icgc$catype == "LUSC", ] %>% droplevels()
