@@ -310,23 +310,3 @@ for (i in h$pathway) {
               axis.title = element_text(size = 16))
     ggsave(paste0("figures/gsea/", i, ".pdf"), a, units = "in", width = 5, height = 3)
 }
-
-
-# 
-fig2e <- ggplot(tnbc, aes(x = HRD, y = inflame, col = sqrt_igr)) + 
-    geom_point(size = 4.5, alpha = 0.5) + 
-    labs(x = "HRD Score", y = "T-Inflamed Signature", col = "IGR Burden") + 
-    scale_color_gradient2(low = "#0F7FFE", high = "#FB0106", mid = "white", 
-                          midpoint = median(tnbc$sqrt_igr),
-                          oob = scales::squish,
-                          limits = quantile(tnbc$sqrt_igr, c(0.2, 0.8)),
-                          breaks = quantile(tnbc$sqrt_igr, c(0.2, 0.5, 0.8)),
-                          labels = c("Lowest", "Median", "Highest")) + 
-    theme_classic() + 
-    theme(legend.position = c(1, 0.05),
-          legend.title = element_text(size = 18, face = "bold"), 
-          legend.text = element_text(size = 15),
-          legend.justification = c(1, 0), 
-          axis.text = element_text(size = 18),
-          axis.title = element_text(size = 18))
-ggsave("figures/fig2e.pdf", fig2e, units = "in", width = 8, height = 4.5)
